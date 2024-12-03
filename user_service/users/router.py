@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, UploadFile, File
 
+from doc_storage_service.config import settings
 from user_service.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
+from user_service.main import producer
 from user_service.users.auth import authenticate_user, create_access_token, get_password_hash
 from user_service.users.dao import UsersDAO
 from user_service.users.dependencies import get_current_user, get_admin
@@ -16,6 +18,12 @@ router_auth = APIRouter(
 router_admin_manage = APIRouter(
     prefix="/admin/manage-users",
     tags=["Управление пользователями"],
+)
+
+
+router_doc = APIRouter(
+    prefix="/doc",
+    tags=["Работа с файлами"]
 )
 
 
@@ -87,3 +95,18 @@ async def delete_user(user_id: int, user: User = Depends(get_admin)):
     return {
         "message": "Пользователь успешно удалён"
     }
+
+
+@router_doc.post("/upload")
+async def upload_file(file: UploadFile = File(...), user: User = Depends(get_current_user)):
+    file_content = await file.read()
+
+    message = {
+        "user_id": user.id,
+        "filename": file.filename,
+        "file_content": file_content.decode('latin-1')  # Кодируем содержимое файла в строку
+    }
+
+    await producer.send_and_wait(settings.TOPIC_NAME, message)
+
+    return {"message": f"Файл '{file.filename}' успешно отправлен для пользователя {user.name}"}

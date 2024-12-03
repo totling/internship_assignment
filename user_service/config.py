@@ -15,6 +15,9 @@ class Config(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
 
+    KAFKA_SERVER: str
+    TOPIC_NAME: str
+
     @model_validator(mode="before")
     @classmethod
     def get_database_url(cls, v):
