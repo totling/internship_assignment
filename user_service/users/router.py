@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, Response
 
 from user_service.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
@@ -7,7 +5,7 @@ from user_service.users.auth import authenticate_user, create_access_token, get_
 from user_service.users.dao import UsersDAO
 from user_service.users.dependencies import get_current_user, get_admin
 from user_service.users.models import User
-from user_service.users.schemas import SUserAuth, SUserRegister, SUserCreate, SUser, SUserUpdate
+from user_service.users.schemas import SUserAuth, SUserCreate, SUser, SUserUpdate
 
 router_auth = APIRouter(
     prefix="/auth",
@@ -22,7 +20,7 @@ router_admin_manage = APIRouter(
 
 
 @router_auth.post("/register")
-async def register_user(user_data: SUserRegister):
+async def register_user(user_data: SUserCreate):
     existing_user = await UsersDAO.find_one_or_none(email=user_data.email)
     if existing_user:
         raise UserAlreadyExistsException
