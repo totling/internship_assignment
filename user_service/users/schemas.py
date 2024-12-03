@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
+
+from user_service.exceptions import PasswordLengthException
 
 
 class SUserRegister(BaseModel):
@@ -7,11 +9,11 @@ class SUserRegister(BaseModel):
     email: EmailStr
     password: str
 
+    @field_validator('password', mode="before")
     @classmethod
-    @validator('password')
-    def password_strength(cls, v):
+    def password_strength(cls, v: str) -> str:
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+            raise PasswordLengthException
         return v
 
 
@@ -25,11 +27,24 @@ class SUserCreate(BaseModel):
     email: EmailStr
     password: str
 
+    @field_validator('password', mode="before")
     @classmethod
-    @validator('password')
-    def password_strength(cls, v):
+    def password_strength(cls, v: str) -> str:
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+            raise PasswordLengthException
+        return v
+
+
+class SUserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+
+    @field_validator('password', mode="before")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise PasswordLengthException
         return v
 
 

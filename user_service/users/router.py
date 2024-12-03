@@ -6,8 +6,8 @@ from user_service.exceptions import IncorrectEmailOrPasswordException, UserAlrea
 from user_service.users.auth import authenticate_user, create_access_token, get_password_hash
 from user_service.users.dao import UsersDAO
 from user_service.users.dependencies import get_current_user, get_admin
-from user_service.users.models import Users
-from user_service.users.schemas import SUserAuth, SUserRegister, SUserCreate, SUser
+from user_service.users.models import User
+from user_service.users.schemas import SUserAuth, SUserRegister, SUserCreate, SUser, SUserUpdate
 
 router_auth = APIRouter(
     prefix="/auth",
@@ -36,18 +36,18 @@ async def login_user(response: Response, user_data: SUserAuth):
     if not user:
         raise IncorrectEmailOrPasswordException
     access_token = create_access_token({"sub": str(user.id)})
-    response.set_cookie("booking_access_token", access_token, httponly=True)
+    response.set_cookie("user_access_token", access_token, httponly=True)
     return access_token
 
 
 @router_auth.post("/logout")
 async def logout_user(response: Response):
-    response.delete_cookie("booking_access_token")
+    response.delete_cookie("user_access_token")
 
 
 @router_admin_manage.post("/create")
-async def create_user(user_data: SUserCreate, user: Users = Depends(get_admin)):
-    hashed_password = user_data.password
+async def create_user(user_data: SUserCreate, user: User = Depends(get_admin)):
+    hashed_password = get_password_hash(user_data.password)
     await UsersDAO.add(
         name=user_data.name,
         email=user_data.email,
@@ -55,23 +55,23 @@ async def create_user(user_data: SUserCreate, user: Users = Depends(get_admin)):
     )
 
 
-@router_admin_manage.patch("/update/{user_id}")
+@router_admin_manage.patch("/update/{user_id}", description="Эндпоинт позволяет обновить информацию о пользователе"
+                                                            ", все параметры кроме user_id - опциональны")
 async def update_user_info(
         user_id: int,
-        name: Optional[str],
-        email: Optional[str],
-        password: Optional[str],
-        is_admin: Optional[bool],
-        user: Users = Depends(get_admin)
+        user_data: SUserUpdate,
+        user: User = Depends(get_admin)
 ):
     updating_user = await UsersDAO.find_by_id(user_id)
     if not updating_user:
         raise UserNotExistException
 
-    if password:
-        hashed_password = get_password_hash(password)
+    user_info = user_data.dict(exclude_unset=True)
 
-    await UsersDAO.update(user_id, name=name, email=email, password=hashed_password, is_admin=is_admin)
+    if "password" in user_info:
+        user_info["password"] = get_password_hash(user_info["password"])
+
+    await UsersDAO.update(user_id, **user_info)
 
     return {
         "message": "Информация пользователя успешно обновлена"
@@ -79,10 +79,13 @@ async def update_user_info(
 
 
 @router_admin_manage.get("/read/{user_id}")
-async def read_user_info(user_id: int, user: Users = Depends(get_admin)) -> SUser:
+async def read_user_info(user_id: int, user: User = Depends(get_admin)) -> SUser:
     return await UsersDAO.find_by_id(user_id)
 
 
 @router_admin_manage.delete("/delete/{user_id}")
-async def delete_user(user_id: int, user: Users = Depends(get_admin)):
+async def delete_user(user_id: int, user: User = Depends(get_admin)):
     await UsersDAO.delete(id=user_id)
+    return {
+        "message": "Пользователь успешно удалён"
+    }

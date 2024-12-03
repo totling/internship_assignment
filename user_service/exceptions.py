@@ -41,3 +41,8 @@ class UserNotExistException(BaseUserServiceException):
 class UserNotAdminException(BaseUserServiceException):
     status_code = status.HTTP_403_FORBIDDEN
     detail = "Недостаточно прав"
+
+
+class PasswordLengthException(BaseUserServiceException):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = "Пароль должен быть 8 символов и длиннее"

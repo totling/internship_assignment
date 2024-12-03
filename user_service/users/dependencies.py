@@ -8,14 +8,14 @@ from user_service.exceptions import (
     IncorrectTokenFormatException,
     TokenAbsentException,
     TokenExpiredException,
-    UserNotExistException,
+    UserNotExistException, UserNotAdminException,
 )
 from user_service.users.dao import UsersDAO
-from user_service.users.models import Users
+from user_service.users.models import User
 
 
 def get_token(request: Request):
-    token = request.cookies.get("booking_access_token")
+    token = request.cookies.get("user_access_token")
     if not token:
         raise TokenAbsentException
     return token
@@ -40,7 +40,7 @@ async def get_current_user(token: str = Depends(get_token)):
     return user
 
 
-def get_admin(user: Users = Depends(get_current_user)):
+def get_admin(user: User = Depends(get_current_user)):
     if not user.is_admin:
-        raise UserNotExistException
+        raise UserNotAdminException
     return user
