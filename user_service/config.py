@@ -30,7 +30,7 @@ class Config(BaseSettings):
     DATABASE_URL: str = ""
 
     class Config:
-        env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+        env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env_users"))
 
         @classmethod
         def load_env(cls):

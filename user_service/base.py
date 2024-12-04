@@ -1,6 +1,6 @@
 from sqlalchemy import delete, insert, select, update
 
-from user_service.database import async_session_maker
+from database import async_session_maker
 
 
 class BaseDAO:

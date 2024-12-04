@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Response, UploadFile, File
 
-from doc_storage_service.config import settings
-from user_service.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
-from user_service.main import producer
-from user_service.users.auth import authenticate_user, create_access_token, get_password_hash
-from user_service.users.dao import UsersDAO
-from user_service.users.dependencies import get_current_user, get_admin
-from user_service.users.models import User
-from user_service.users.schemas import SUserAuth, SUserCreate, SUser, SUserUpdate
+from config import settings
+from exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
+from kafka import get_producer
+from auth import authenticate_user, create_access_token, get_password_hash
+from dao import UsersDAO
+from dependencies import get_current_user, get_admin
+from models import User
+from schemas import SUserAuth, SUserCreate, SUser, SUserUpdate
 
 router_auth = APIRouter(
     prefix="/auth",
@@ -104,8 +104,10 @@ async def upload_file(file: UploadFile = File(...), user: User = Depends(get_cur
     message = {
         "user_id": user.id,
         "filename": file.filename,
-        "file_content": file_content.decode('latin-1')  # Кодируем содержимое файла в строку
+        "file_content": file_content.decode('latin-1')
     }
+
+    producer = await get_producer()
 
     await producer.send_and_wait(settings.TOPIC_NAME, message)
 

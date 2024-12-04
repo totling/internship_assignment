@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 
-from user_service.exceptions import PasswordLengthException
+from exceptions import PasswordLengthException
 
 
 class SUserAuth(BaseModel):
