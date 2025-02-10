@@ -1,7 +1,7 @@
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 
-from config import settings
+from doc_storage_service.config import settings
 
 
 client = AsyncIOMotorClient(settings.MONGO_URI)

@@ -16,7 +16,9 @@ class Config(BaseSettings):
     ALGORITHM: str
 
     KAFKA_SERVER: str
-    TOPIC_NAME: str
+    REQUEST_TOPIC_NAME: str
+    RESPONSE_TOPIC_NAME: str
+    KAFKA_GROUP_ID: str
 
     @model_validator(mode="before")
     @classmethod

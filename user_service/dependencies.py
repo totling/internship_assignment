@@ -3,15 +3,15 @@ from datetime import datetime
 import jwt
 from fastapi import Depends, Request
 
-from config import settings
-from exceptions import (
+from user_service.config import settings
+from user_service.exceptions import (
     IncorrectTokenFormatException,
     TokenAbsentException,
     TokenExpiredException,
     UserNotExistException, UserNotAdminException,
 )
-from dao import UsersDAO
-from models import User
+from user_service.dao import UsersDAO
+from user_service.models import User
 
 
 def get_token(request: Request):

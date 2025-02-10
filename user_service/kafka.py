@@ -1,10 +1,12 @@
-from aiokafka import AIOKafkaProducer
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 import json
 import asyncio
-from config import settings
+from user_service.config import settings
 
 producer = None
+consumer = None
 producer_ready = asyncio.Event()
+consumer_ready = asyncio.Event()
 
 
 async def start_producer():
@@ -29,3 +31,28 @@ async def stop_producer():
 async def get_producer():
     await producer_ready.wait()
     return producer
+
+
+async def start_consumer():
+    global consumer
+    consumer = AIOKafkaConsumer(
+        settings.RESPONSE_TOPIC_NAME,
+        bootstrap_servers=settings.KAFKA_SERVER,
+        group_id=settings.KAFKA_GROUP_ID,
+        value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+    )
+    await consumer.start()
+    consumer_ready.set()
+
+
+async def stop_consumer():
+    global consumer
+    if consumer:
+        await consumer.stop()
+    else:
+        raise RuntimeError("Consumer is not initialized yet")
+
+
+async def get_consumer():
+    await consumer_ready.wait()
+    return consumer

@@ -1,8 +1,8 @@
 import uvicorn
 from fastapi import FastAPI
 
-from kafka import start_producer, stop_producer
-from router import router_auth, router_admin_manage, router_doc
+from user_service.kafka import start_producer, stop_producer, start_consumer, stop_consumer
+from user_service.router import router_auth, router_admin_manage, router_doc
 
 app = FastAPI()
 
@@ -10,11 +10,13 @@ app = FastAPI()
 @app.on_event("startup")
 async def startup():
     await start_producer()
+    await start_consumer()
 
 
 @app.on_event("shutdown")
 async def shutdown():
     await stop_producer()
+    await stop_consumer()
 
 
 app.include_router(router_auth, prefix="/public")

@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, Response, UploadFile, File
+import asyncio
+import io
 
-from config import settings
-from exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
-from kafka import get_producer
-from auth import authenticate_user, create_access_token, get_password_hash
-from dao import UsersDAO
-from dependencies import get_current_user, get_admin
-from models import User
-from schemas import SUserAuth, SUserCreate, SUser, SUserUpdate
+from fastapi import APIRouter, Depends, Response, UploadFile, File, HTTPException
+from starlette.responses import StreamingResponse
+
+from user_service.config import settings
+from user_service.exceptions import IncorrectEmailOrPasswordException, UserAlreadyExistsException, UserNotExistException
+from user_service.kafka import get_producer, get_consumer
+from user_service.auth import authenticate_user, create_access_token, get_password_hash
+from user_service.dao import UsersDAO
+from user_service.dependencies import get_current_user, get_admin
+from user_service.models import User
+from user_service.schemas import SUserAuth, SUserCreate, SUser, SUserUpdate
 
 router_auth = APIRouter(
     prefix="/auth",
@@ -109,6 +113,34 @@ async def upload_file(file: UploadFile = File(...), user: User = Depends(get_cur
 
     producer = await get_producer()
 
-    await producer.send_and_wait(settings.TOPIC_NAME, message)
+    await producer.send_and_wait(settings.REQUEST_TOPIC_NAME, message)
 
     return {"message": f"Файл '{file.filename}' успешно отправлен для пользователя {user.name}"}
+
+
+@router_doc.post("/download/{filename}")
+async def download_file(filename: str, user: User = Depends(get_current_user)):
+    message = {
+        "user_id": user.id,
+        "filename": filename,
+    }
+
+    producer = await get_producer()
+
+    await producer.send_and_wait(settings.REQUEST_TOPIC_NAME, message)
+
+    consumer = await get_consumer()
+
+    try:
+        timeout = 30
+        async for msg in consumer:
+            filedata = msg.value["filedata"]
+            if filedata:
+                break
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=408, detail="Request timed out")
+
+    file_stream = io.BytesIO(filedata.encode('utf-8'))
+
+    return StreamingResponse(file_stream, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers={
+        "Content-Disposiotion": f"attachment; filename={filename}".encode('utf-8').decode('latin-1')})
