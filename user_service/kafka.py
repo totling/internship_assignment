@@ -13,8 +13,9 @@ async def start_producer():
     global producer
     producer = AIOKafkaProducer(
         bootstrap_servers=settings.KAFKA_SERVER,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        value_serializer=lambda v: json.dumps(v).encode('latin-1'),
         compression_type="gzip",
+        max_request_size=104857600
     )
     await producer.start()
     producer_ready.set()
@@ -39,7 +40,7 @@ async def start_consumer():
         settings.RESPONSE_TOPIC_NAME,
         bootstrap_servers=settings.KAFKA_SERVER,
         group_id=settings.KAFKA_GROUP_ID,
-        value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+        value_deserializer=lambda v: json.loads(v.decode('latin-1')),
     )
     await consumer.start()
     consumer_ready.set()

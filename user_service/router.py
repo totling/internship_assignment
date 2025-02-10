@@ -1,6 +1,7 @@
 import asyncio
 import io
 
+import chardet
 from fastapi import APIRouter, Depends, Response, UploadFile, File, HTTPException
 from starlette.responses import StreamingResponse
 
@@ -108,7 +109,7 @@ async def upload_file(file: UploadFile = File(...), user: User = Depends(get_cur
     message = {
         "user_id": user.id,
         "filename": file.filename,
-        "file_content": file_content.decode('latin-1')
+        "file_content": file_content.decode('latin-1'),
     }
 
     producer = await get_producer()
@@ -140,7 +141,7 @@ async def download_file(filename: str, user: User = Depends(get_current_user)):
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="Request timed out")
 
-    file_stream = io.BytesIO(filedata.encode('utf-8'))
+    file_stream = io.BytesIO(filedata.encode('latin-1'))
 
-    return StreamingResponse(file_stream, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers={
-        "Content-Disposiotion": f"attachment; filename={filename}".encode('utf-8').decode('latin-1')})
+    return StreamingResponse(file_stream, media_type="application/octet-stream", headers={
+        "Content-Disposition": f"attachment; filename={filename}".encode('utf-8').decode('latin-1')})
